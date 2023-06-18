@@ -6,6 +6,9 @@ public class RaycastInfo : MonoBehaviour
 {
     public Camera gameCamera;
     public float reachDistance;
+
+    public Hotbar hotbarUI;
+
     void Update()
     {
         Ray ray = gameCamera.ScreenPointToRay(Input.mousePosition);
@@ -17,6 +20,8 @@ public class RaycastInfo : MonoBehaviour
             {
                 GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
 
+                cube.GetComponent<MeshRenderer>().material = hotbarUI.blocks[Hotbar.currentBlock];
+                cube.layer = LayerMask.NameToLayer("Ground");
                 cube.transform.position = CalculatePlacePosition(hitInfo);
             }
 
