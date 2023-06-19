@@ -6,118 +6,124 @@ using UnityEngine;
 public class ChunkGenerator : MonoBehaviour
 {
 
-    public static int xSize = 40;
-    public static int ySize = 1;
-    public static int zSize = 40;
-    private bool[,,] blockAtPos = new bool[xSize,ySize,zSize];
+    public Vector3Int maxChunkSize = new Vector3Int(40,10,40);
+    public Vector3Int startingChunk = new Vector3Int(20,8,18);
+    private bool[,,] blockAtPos;
 
     Mesh mesh;
     List<Vector3> vertices = new List<Vector3>();
     List<int> triangles = new List<int>();
 
-    Vector3[] localVertexPositions = 
+    readonly Vector3[] localVertexPositions = 
         {
             //y- vertices
-            new Vector3(.5f, -.5f, .5f),    //0
-            new Vector3(-.5f, -.5f, .5f),   //1
-            new Vector3(-.5f, -.5f, -.5f),  //2
-            new Vector3(.5f, -.5f, -.5f),   //3
+            new Vector3(1, 0, 1),    //0
+            new Vector3(0, 0, 1),   //1
+            new Vector3(0, 0, 0),  //2
+            new Vector3(1, 0, 0),   //3
             
 
             //y+ vertices
-            new Vector3(.5f, .5f, -.5f),    //4
-            new Vector3(-.5f, .5f, -.5f),   //5
-            new Vector3(-.5f, .5f, .5f),    //6
-            new Vector3(.5f, .5f, .5f),     //7
+            new Vector3(1, 1, 0),    //4
+            new Vector3(0, 1, 0),   //5
+            new Vector3(0, 1, 1),    //6
+            new Vector3(1, 1, 1),     //7
 
             //x- vertices
-            new Vector3(-.5f, -.5f, -.5f),  //8
-            new Vector3(-.5f, -.5f, .5f),   //9
-            new Vector3(-.5f, .5f, .5f),    //10
-            new Vector3(-.5f, .5f, -.5f),   //11
+            new Vector3(0, 0, 0),  //8
+            new Vector3(0, 0, 1),   //9
+            new Vector3(0, 1, 1),    //10
+            new Vector3(0, 1, 0),   //11
 
             //x+ vertices
-            new Vector3(.5f, -.5f, .5f),    //12
-            new Vector3(.5f, -.5f, -.5f),   //13
-            new Vector3(.5f, .5f, -.5f),    //14
-            new Vector3(.5f, .5f, .5f),     //15
+            new Vector3(1, 0, 1),    //12
+            new Vector3(1, 0, 0),   //13
+            new Vector3(1, 1, 0),    //14
+            new Vector3(1, 1, 1),     //15
 
             //z- vertices
-            new Vector3(.5f, -.5f, -.5f),   //16
-            new Vector3(-.5f, -.5f, -.5f),  //17
-            new Vector3(-.5f, .5f, -.5f),   //18
-            new Vector3(.5f, .5f, -.5f),    //19
+            new Vector3(1, 0, 0),   //16
+            new Vector3(0, 0, 0),  //17
+            new Vector3(0, 1, 0),   //18
+            new Vector3(1, 1, 0),    //19
 
             //z+ vertices
-            new Vector3(-.5f, -.5f, .5f),   //20
-            new Vector3(.5f, -.5f, .5f),    //21
-            new Vector3(.5f, .5f, .5f),     //22
-            new Vector3(-.5f, .5f, .5f)     //23
+            new Vector3(0, 0, 1),   //20
+            new Vector3(1, 0, 1),    //21
+            new Vector3(1, 1, 1),     //22
+            new Vector3(0, 1, 1)     //23
         };
 
-    Vector3[] offsets = {
-        new Vector3(0,0,1),
-        new Vector3(0,0,-1),
-        new Vector3(1,0,0),
-        new Vector3(-1,0,0),
-        new Vector3(0,1,0),
-        new Vector3(0,-1,0)
+    readonly Vector3Int[] offsets = {
+        new Vector3Int(0,0,1),
+        new Vector3Int(0,0,-1),
+        new Vector3Int(1,0,0),
+        new Vector3Int(-1,0,0),
+        new Vector3Int(0,1,0),
+        new Vector3Int(0,-1,0)
     };
 
     void Start() {
 
-        for (int x = 0; x < xSize; x++) {
-            for (int y = 0; y < ySize; y++) {
-                for (int z = 0; z < zSize; z++) {
+        blockAtPos = new bool[maxChunkSize.x,maxChunkSize.y,maxChunkSize.z];
+
+        mesh = new Mesh();
+        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        GetComponent<MeshFilter>().mesh = mesh;
+
+        PopulateInitialChunk();
+        CreateMeshData();
+        UpdateMesh();
+    }
+
+    void PopulateInitialChunk() {
+        for (int x = 0; x < startingChunk.x; x++) {
+            for (int y = 0; y < startingChunk.y; y++) {
+                for (int z = 0; z < startingChunk.z; z++) {
+                    print((x,y,z));
                     blockAtPos[x,y,z] = true;
                 }
             }
         }
+    }
 
+    void CreateMeshData() {
+
+        //Used for offsetting vertex indices
         int indexOffset = 0;
-        for (int x = 0; x < xSize; x++) {
-            for (int y = 0; y < ySize; y++) {
-                for (int z = 0; z < zSize; z++) {
-                    List<Vector3> visibleFaces = new List<Vector3>();
-                    foreach (Vector3 offset in offsets) {
+        print(blockAtPos[0,8,1]);
+        for (int x = 0; x < maxChunkSize.x; x++) {
+            for (int y = 0; y < maxChunkSize.y; y++) {
+                for (int z = 0; z < maxChunkSize.z; z++) {
+                    //Checking if block should be rendered
+                    if (blockAtPos[x,y,z]) {
+                        List<Vector3> visibleFaces = new List<Vector3>();
+                        foreach (Vector3 offset in offsets) {
 
-                        int offsetX = x + (int)offset.x;
-                        int offsetY = y + (int)offset.y;
-                        int offsetZ = z + (int)offset.z;
+                            int offsetX = x + (int)offset.x;
+                            int offsetY = y + (int)offset.y;
+                            int offsetZ = z + (int)offset.z;
 
-                        //Checking if in bounds of array
-                        if (0 <= offsetX && offsetX < xSize)
-                            if (0 <= offsetY && offsetY < ySize)
-                                if (0 <= offsetZ && offsetZ < zSize)
-                                {
-                                    //Checking if there isn't a block at the offset position
-                                    if (!blockAtPos[offsetX,offsetY,offsetZ]) {
-                                        print("Passed.");
-                                        visibleFaces.Add(offset);
-                                    }
-                                }
-                                else
-                                    visibleFaces.Add(offset);
-                            else
+                            //Checking if out of bounds of array (at edge of chunk)
+                            if (
+                                offsetX < 0 || offsetX >= maxChunkSize.x ||
+                                offsetY < 0 || offsetY >= maxChunkSize.y ||
+                                offsetZ < 0 || offsetZ >= maxChunkSize.z
+                                )
                                 visibleFaces.Add(offset);
-                        else
-                            visibleFaces.Add(offset);
-                                
-                    }
-                    AddVertices(new Vector3(x,y,z));
-                    AddTriangles(visibleFaces, indexOffset);
 
-                    indexOffset+=24;
+                            else if (!blockAtPos[offsetX,offsetY,offsetZ])
+                                visibleFaces.Add(offset);
+                        }
+                        AddVertices(new Vector3(x,y,z));
+                        AddTriangles(visibleFaces, indexOffset);
+
+                        indexOffset+=24;
+                    }
                 }
             }
         }
-
-        mesh = new Mesh();
-        GetComponent<MeshFilter>().mesh = mesh;
-        UpdateMesh();
-
     }
-
 
     void AddVertices(Vector3 localChunkPos) {
         for (int i = 0; i < 24; i++)
@@ -128,8 +134,6 @@ public class ChunkGenerator : MonoBehaviour
 
 
     void AddTriangles(List<Vector3> visibleFaces, int indexOffset) {
-        if (visibleFaces.Count != 0)
-            print("Visible faces count is: " + visibleFaces.Count);
         List<int> voxelTriangles = new List<int>();
 
         foreach (Vector3 face in visibleFaces)
@@ -167,7 +171,32 @@ public class ChunkGenerator : MonoBehaviour
         }
 
         triangles.AddRange(voxelTriangles);
-        // print("Current triangles count is: " + triangles.Count);
+    }
+
+
+    public void AddBlock(Vector3Int blockPos)
+    {
+        blockAtPos[blockPos.x, blockPos.y, blockPos.z] = true;
+        ClearTriangleAndVertexData();
+        CreateMeshData();
+        UpdateMesh();
+    }
+
+
+    public void RemoveBlock(Vector3Int blockPos)
+    {
+        print(blockPos);
+        blockAtPos[blockPos.x, blockPos.y, blockPos.z] = false;
+        ClearTriangleAndVertexData();
+        CreateMeshData();
+        UpdateMesh();
+    }
+
+
+    void ClearTriangleAndVertexData()
+    {
+        vertices.Clear();
+        triangles.Clear();
     }
 
 
@@ -177,10 +206,9 @@ public class ChunkGenerator : MonoBehaviour
         print("Final triangles count is: " + triangles.Count);
 
         mesh.Clear();
-
         mesh.vertices = vertices.ToArray();
         mesh.triangles = triangles.ToArray();
-
         mesh.RecalculateNormals();
+        GetComponent<MeshCollider>().sharedMesh = mesh;
     }
 }
