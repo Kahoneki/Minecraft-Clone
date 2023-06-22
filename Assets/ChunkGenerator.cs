@@ -12,6 +12,8 @@ public class ChunkGenerator : MonoBehaviour
     private bool[,,] blockAtPos;
     private byte[,,] blockID;
 
+    private int atlasSize = 4;
+
     Mesh mesh;
     List<Vector3> vertices = new List<Vector3>();
     List<int> triangles = new List<int>();
@@ -25,7 +27,6 @@ public class ChunkGenerator : MonoBehaviour
         new Vector3(0, 0, 0),  //2
         new Vector3(1, 0, 0),   //3
         
-
         //y+ vertices
         new Vector3(1, 1, 0),    //4
         new Vector3(0, 1, 0),   //5
@@ -105,6 +106,26 @@ readonly Vector2[] uvLookup =
         new Vector3Int(0,-1,0)
     };
 
+    readonly byte[,] blockIDToTextureIDs = {
+        //Pass in block id as index to get array of corresponding texture ids in texture atlas
+        //Order: y-, y+, x-, x+, z-, z+
+
+        {0,0,0,0,0,0}, //Stone: 0
+        {1,1,1,1,1,1}, //Dirt: 1
+        {1,7,2,2,2,2} //Grass: 2
+
+    };
+
+    public Vector2 TextureIDToUVCoord(byte textureID) {
+        int y = textureID / atlasSize;
+        y = (int)0.75-(y/atlasSize);
+
+        int x = textureID % atlasSize;
+        x = x*(1/atlasSize);
+
+        return new Vector2(x,y);
+    } 
+
     public Material meshMaterial;
 
     void Start() {
@@ -173,6 +194,7 @@ readonly Vector2[] uvLookup =
                         }
                         AddVertices(new Vector3Int(x,y,z));
                         AddUVs(new Vector3Int(x,y,z), visibleFaces);
+                        // AddUVs(new Vector3Int(x,y,z));
                         AddTriangles(visibleFaces, indexOffset);
 
                         indexOffset+=24;
@@ -190,61 +212,47 @@ readonly Vector2[] uvLookup =
         }
     }
 
-    // void AddUVs(Vector3Int localChunkPos) {
-    //     byte currentBlock = blockID[localChunkPos.x, localChunkPos.y, localChunkPos.z];
-    //     // if (currentBlock != 255)
-    //         for (int i = 0; i < 24; i++) {
-    //             uvs.Add(uvLookup[i]);
-    //         }
-    // }
+
     void AddUVs(Vector3Int localChunkPos, List<Vector3> visibleFaces) {
     byte currentBlock = blockID[localChunkPos.x, localChunkPos.y, localChunkPos.z];
     for (int i = 0; i < 6; i++) {
-        if (visibleFaces.Contains(offsets[i]))
-        {
-            switch (i) {
-                case 0: // y- face
-                    uvs.Add(uvLookup[0]);
-                    uvs.Add(uvLookup[1]);
-                    uvs.Add(uvLookup[2]);
-                    uvs.Add(uvLookup[3]);
-                    break;
-                case 1: // y+ face
-                    uvs.Add(uvLookup[4]);
-                    uvs.Add(uvLookup[5]);
-                    uvs.Add(uvLookup[6]);
-                    uvs.Add(uvLookup[7]);
-                    break;
-                case 2: // x- face
-                    uvs.Add(uvLookup[8]);
-                    uvs.Add(uvLookup[9]);
-                    uvs.Add(uvLookup[10]);
-                    uvs.Add(uvLookup[11]);
-                    break;
-                case 3: // x+ face
-                    uvs.Add(uvLookup[12]);
-                    uvs.Add(uvLookup[13]);
-                    uvs.Add(uvLookup[14]);
-                    uvs.Add(uvLookup[15]);
-                    break;
-                case 4: // z- face
-                    uvs.Add(uvLookup[16]);
-                    uvs.Add(uvLookup[17]);
-                    uvs.Add(uvLookup[18]);
-                    uvs.Add(uvLookup[19]);
-                    break;
-                case 5: // z+ face
-                    uvs.Add(uvLookup[20]);
-                    uvs.Add(uvLookup[21]);
-                    uvs.Add(uvLookup[22]);
-                    uvs.Add(uvLookup[23]);
-                    break;
-            }
-        }
-
-        else {
-            for (int k = 0; k < 4; k++)
-                uvs.Add(Vector2.zero);   
+        switch (i) {
+            case 0: // y- face
+                uvs.Add(uvLookup[0]);
+                uvs.Add(uvLookup[1]);
+                uvs.Add(uvLookup[2]);
+                uvs.Add(uvLookup[3]);
+                break;
+            case 1: // y+ face
+                uvs.Add(uvLookup[4]);
+                uvs.Add(uvLookup[5]);
+                uvs.Add(uvLookup[6]);
+                uvs.Add(uvLookup[7]);
+                break;
+            case 2: // x- face
+                uvs.Add(uvLookup[8]);
+                uvs.Add(uvLookup[9]);
+                uvs.Add(uvLookup[10]);
+                uvs.Add(uvLookup[11]);
+                break;
+            case 3: // x+ face
+                uvs.Add(uvLookup[12]);
+                uvs.Add(uvLookup[13]);
+                uvs.Add(uvLookup[14]);
+                uvs.Add(uvLookup[15]);
+                break;
+            case 4: // z- face
+                uvs.Add(uvLookup[16]);
+                uvs.Add(uvLookup[17]);
+                uvs.Add(uvLookup[18]);
+                uvs.Add(uvLookup[19]);
+                break;
+            case 5: // z+ face
+                uvs.Add(uvLookup[20]);
+                uvs.Add(uvLookup[21]);
+                uvs.Add(uvLookup[22]);
+                uvs.Add(uvLookup[23]);
+                break;
         }
     }
 }
