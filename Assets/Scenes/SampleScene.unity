@@ -2263,8 +2263,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   worldGenerator: {fileID: 1379294873}
   maxChunkSize: {x: 40, y: 20, z: 40}
-  startingChunk: {x: 20, y: 8, z: 18}
-  meshMaterial: {fileID: 2100000, guid: 222f780f384ed2241bfd9bc648387d6d, type: 2}
+  startingChunk: {x: 1, y: 1, z: 1}
+  meshMaterial: {fileID: 2100000, guid: ae017fb85e7ad4e4da4f7ffd7ce22b1b, type: 2}
 --- !u!33 &1554583994
 MeshFilter:
   m_ObjectHideFlags: 0

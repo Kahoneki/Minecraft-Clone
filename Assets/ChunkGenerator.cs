@@ -8,7 +8,7 @@ public class ChunkGenerator : MonoBehaviour
     public WorldGenerator worldGenerator;
 
     public Vector3Int maxChunkSize = new Vector3Int(40,40,40);
-    public Vector3Int startingChunk = new Vector3Int(16,8,16);
+    public Vector3Int startingChunk = new Vector3Int(1,1,1);
     private bool[,,] blockAtPos;
     private byte[,,] blockID;
 
@@ -58,44 +58,44 @@ public class ChunkGenerator : MonoBehaviour
         new Vector3(0, 1, 1)     //23
         };
 
-readonly Vector2[] uvLookup =
-        {
-            //y- uvs
-            new Vector2(0,0),
-            new Vector2(1,0),
-            new Vector2(1,1),
-            new Vector2(0,1),
+    readonly Vector2[] uvLookup =
+            {
+                //y- uvs
+                new Vector2(0,0),
+                new Vector2(1,0),
+                new Vector2(1,1),
+                new Vector2(0,1),
 
-            //y+ uvs
-            new Vector2(0,1),
-            new Vector2(1,1),
-            new Vector2(1,0),
-            new Vector2(0,0),
+                //y+ uvs
+                new Vector2(0,1),
+                new Vector2(1,1),
+                new Vector2(1,0),
+                new Vector2(0,0),
 
-            //x- uvs
-            new Vector2(1,0),
-            new Vector2(1,1),
-            new Vector2(0,1),
-            new Vector2(0,0),
+                //x- uvs
+                new Vector2(1,0),
+                new Vector2(1,1),
+                new Vector2(0,1),
+                new Vector2(0,0),
 
-            //x+ uvs
-            new Vector2(1,0),
-            new Vector2(1,1),
-            new Vector2(0,1),
-            new Vector2(0,0),
+                //x+ uvs
+                new Vector2(1,0),
+                new Vector2(1,1),
+                new Vector2(0,1),
+                new Vector2(0,0),
 
-            //z- uvs
-            new Vector2(0,0),
-            new Vector2(1,0),
-            new Vector2(1,1),
-            new Vector2(0,1),
+                //z- uvs
+                new Vector2(0,0),
+                new Vector2(1,0),
+                new Vector2(1,1),
+                new Vector2(0,1),
 
-            //z+ uvs
-            new Vector2(0,0),
-            new Vector2(1,0),
-            new Vector2(1,1),
-            new Vector2(0,1)
-        };
+                //z+ uvs
+                new Vector2(0,0),
+                new Vector2(1,0),
+                new Vector2(1,1),
+                new Vector2(0,1)
+            };
 
     readonly Vector3Int[] offsets = {
         new Vector3Int(0,0,1),
@@ -116,14 +116,26 @@ readonly Vector2[] uvLookup =
 
     };
 
-    public Vector2 TextureIDToUVCoord(byte textureID) {
-        int y = textureID / atlasSize;
-        y = (int)0.75-(y/atlasSize);
+    public List<Vector2> TextureIDToUVCoords(byte textureID) {
 
-        int x = textureID % atlasSize;
-        x = x*(1/atlasSize);
+        List<Vector2> uvCoords = new List<Vector2>();
 
-        return new Vector2(x,y);
+        //Bottom left
+        int y1 = textureID / atlasSize;
+        y1 = (int)0.75-(y1/atlasSize);
+        int x1 = textureID % atlasSize;
+        x1 = x1*(1/atlasSize);
+
+        //Top right
+        int y2 = (int)(y1+0.25);
+        int x2 = (int)(x1+0.25);
+
+        uvCoords.Add(new Vector2(x1,y1));
+        uvCoords.Add(new Vector2(x2,y1));
+        uvCoords.Add(new Vector2(x2,y2));
+        uvCoords.Add(new Vector2(x1,y2));
+
+        return uvCoords;
     } 
 
     public Material meshMaterial;
@@ -135,16 +147,29 @@ readonly Vector2[] uvLookup =
         mesh = new Mesh();
         mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
         GetComponent<MeshFilter>().mesh = mesh;
+        Renderer meshRenderer = GetComponent<MeshRenderer>();
+        meshRenderer.material = meshMaterial;
 
         PopulateInitialChunk();
         CreateMeshData();
         UpdateMesh();
 
-        Renderer meshRenderer = GetComponent<MeshRenderer>();
-        meshRenderer.material = meshMaterial;
+        
+        
     }
 
     void PopulateInitialChunk() {
+
+        //Initiating all blocks to air blocks
+        for (int x = 0; x < maxChunkSize.x; x++) {
+            for (int y = 0; y < maxChunkSize.y; y++) {
+                for (int z = 0; z < maxChunkSize.z; z++) {
+                    blockID[x,y,z] = 255;
+                }
+            }
+        }
+
+        //Filling in starting blocks
         for (int x = 0; x < startingChunk.x; x++) {
             for (int y = 0; y < startingChunk.y; y++) {
                 for (int z = 0; z < startingChunk.z; z++) {
@@ -156,13 +181,7 @@ readonly Vector2[] uvLookup =
                 }
             }
         }
-        for (int x = 0; x < maxChunkSize.x; x++) {
-            for (int y = 0; y < maxChunkSize.y; y++) {
-                for (int z = 0; z < maxChunkSize.z; z++) {
-                    blockID[x,y,z] = 255;
-                }
-            }
-        }
+
     }
 
     void CreateMeshData() {
@@ -193,8 +212,7 @@ readonly Vector2[] uvLookup =
                                 visibleFaces.Add(offset);
                         }
                         AddVertices(new Vector3Int(x,y,z));
-                        AddUVs(new Vector3Int(x,y,z), visibleFaces);
-                        // AddUVs(new Vector3Int(x,y,z));
+                        AddUVs(new Vector3Int(x,y,z));
                         AddTriangles(visibleFaces, indexOffset);
 
                         indexOffset+=24;
@@ -213,49 +231,28 @@ readonly Vector2[] uvLookup =
     }
 
 
-    void AddUVs(Vector3Int localChunkPos, List<Vector3> visibleFaces) {
+    void AddUVs(Vector3Int localChunkPos) {
     byte currentBlock = blockID[localChunkPos.x, localChunkPos.y, localChunkPos.z];
-    for (int i = 0; i < 6; i++) {
-        switch (i) {
-            case 0: // y- face
-                uvs.Add(uvLookup[0]);
-                uvs.Add(uvLookup[1]);
-                uvs.Add(uvLookup[2]);
-                uvs.Add(uvLookup[3]);
-                break;
-            case 1: // y+ face
-                uvs.Add(uvLookup[4]);
-                uvs.Add(uvLookup[5]);
-                uvs.Add(uvLookup[6]);
-                uvs.Add(uvLookup[7]);
-                break;
-            case 2: // x- face
-                uvs.Add(uvLookup[8]);
-                uvs.Add(uvLookup[9]);
-                uvs.Add(uvLookup[10]);
-                uvs.Add(uvLookup[11]);
-                break;
-            case 3: // x+ face
-                uvs.Add(uvLookup[12]);
-                uvs.Add(uvLookup[13]);
-                uvs.Add(uvLookup[14]);
-                uvs.Add(uvLookup[15]);
-                break;
-            case 4: // z- face
-                uvs.Add(uvLookup[16]);
-                uvs.Add(uvLookup[17]);
-                uvs.Add(uvLookup[18]);
-                uvs.Add(uvLookup[19]);
-                break;
-            case 5: // z+ face
-                uvs.Add(uvLookup[20]);
-                uvs.Add(uvLookup[21]);
-                uvs.Add(uvLookup[22]);
-                uvs.Add(uvLookup[23]);
-                break;
+    if (currentBlock != 255) {
+        for (int i = 0; i < 6; i++) {
+            byte currentFaceTextureID = blockIDToTextureIDs[currentBlock,i];
+            List<Vector2> currentFaceUVCoords = TextureIDToUVCoords(currentFaceTextureID);
+            
+            //ERROR - PRINTS ALL 0
+            foreach(Vector2 coord in currentFaceUVCoords)
+                print((coord.x, coord.y));
+            uvs.Add(currentFaceUVCoords[0]);
+            uvs.Add(currentFaceUVCoords[1]);
+            uvs.Add(currentFaceUVCoords[2]);
+            uvs.Add(currentFaceUVCoords[3]);
+
+            // uvs.Add(new Vector2(0f,0f));
+            // uvs.Add(new Vector2(0f,0f));
+            // uvs.Add(new Vector2(0f,0f));
+            // uvs.Add(new Vector2(0f,0f));
+            }
         }
     }
-}
 
 
     void AddTriangles(List<Vector3> visibleFaces, int indexOffset) {
