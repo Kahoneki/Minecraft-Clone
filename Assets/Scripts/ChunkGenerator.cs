@@ -5,10 +5,10 @@ using UnityEngine;
 [RequireComponent(typeof(MeshFilter))]
 public class ChunkGenerator : MonoBehaviour
 {
-    public WorldGenerator worldGenerator;
+    public Hotbar hotbar;
 
     public Vector3Int maxChunkSize = new Vector3Int(40,40,40);
-    public Vector3Int startingChunk = new Vector3Int(1,1,1);
+    public Vector3Int startingChunk = new Vector3Int(16,20,16);
     private bool[,,] blockAtPos;
     private byte[,,] blockID;
 
@@ -110,25 +110,38 @@ public class ChunkGenerator : MonoBehaviour
         //Pass in block id as index to get array of corresponding texture ids in texture atlas
         //Order: y-, y+, x-, x+, z-, z+
 
-        {0,0,0,0,0,0}, //Stone: 0
-        {1,1,1,1,1,1}, //Dirt: 1
-        {1,7,2,2,2,2} //Grass: 2
-
+        {0,0,0,0,0,0},          //Stone: 0
+        {1,1,1,1,1,1},          //Dirt: 1
+        {1,7,2,2,2,2},          //Grass: 2
+        {3,3,3,3,3,3},          //Coal ore: 3
+        {4,4,4,4,4,4},          //Oak planks: 4
+        {6,6,5,5,5,5},          //Oak log: 5
+        {8,8,8,8,8,8},          //Cobblestone: 6
+        {9,9,9,9,9,9},          //Bedrock: 7
+        {10,10,10,10,10,10},    //Sand: 8
+        {11,11,11,11,11,11},    //Bricks: 9
+        {15,15,12,13,13,13},    //Unlit furnace: 10
+        {15,15,14,13,13,13}     //Lit furnace: 11
     };
 
     public List<Vector2> TextureIDToUVCoords(byte textureID) {
 
         List<Vector2> uvCoords = new List<Vector2>();
+        float floatTextureID = (float)textureID; //Using standard arithmetic with bytes is weird
 
         //Bottom left
-        int y1 = textureID / atlasSize;
-        y1 = (int)0.75-(y1/atlasSize);
-        int x1 = textureID % atlasSize;
-        x1 = x1*(1/atlasSize);
+        float y1 = Mathf.Floor(floatTextureID / atlasSize);
+        y1 = 0.75f-(y1/atlasSize);
+
+        float x1 = floatTextureID % atlasSize;
+        
+        x1 /= (float)atlasSize;
+
 
         //Top right
-        int y2 = (int)(y1+0.25);
-        int x2 = (int)(x1+0.25);
+        float y2 = y1+0.25f;
+        float x2 = x1+0.25f;
+
 
         uvCoords.Add(new Vector2(x1,y1));
         uvCoords.Add(new Vector2(x2,y1));
@@ -136,7 +149,7 @@ public class ChunkGenerator : MonoBehaviour
         uvCoords.Add(new Vector2(x1,y2));
 
         return uvCoords;
-    } 
+    }
 
     public Material meshMaterial;
 
@@ -153,9 +166,6 @@ public class ChunkGenerator : MonoBehaviour
         PopulateInitialChunk();
         CreateMeshData();
         UpdateMesh();
-
-        
-        
     }
 
     void PopulateInitialChunk() {
@@ -174,15 +184,38 @@ public class ChunkGenerator : MonoBehaviour
             for (int y = 0; y < startingChunk.y; y++) {
                 for (int z = 0; z < startingChunk.z; z++) {
                     blockAtPos[x,y,z] = true;
-                    if (y > (int)(startingChunk.y/2))
-                        blockID[x,y,z] = 1; //Dirt
-                    else
-                        blockID[x,y,z] = 0; //Stone
+
+                    blockID[x,y,z] = StartingChunkBlockLookup(y);
+
+                    //Display all block types in a line:
+                    // blockID[x,y,z] = (byte)z;
                 }
             }
         }
-
     }
+
+    byte StartingChunkBlockLookup(int y) {
+        int max = startingChunk.y;
+
+        //Coal Generation
+        if (y != 0 && y == Random.Range(0,max/2))
+            return 3;
+
+        if (y > max-(max/3)) {
+            if (y == max-1)
+                return 2;
+            else
+                return 1;
+        }
+
+        else {
+            if (y == 0)
+                return 7;
+            else
+                return 0;
+        }
+    }
+
 
     void CreateMeshData() {
 
@@ -225,9 +258,7 @@ public class ChunkGenerator : MonoBehaviour
 
     void AddVertices(Vector3Int localChunkPos) {
         for (int i = 0; i < 24; i++)
-        {
             vertices.Add(localVertexPositions[i] + localChunkPos);
-        }
     }
 
 
@@ -238,18 +269,10 @@ public class ChunkGenerator : MonoBehaviour
             byte currentFaceTextureID = blockIDToTextureIDs[currentBlock,i];
             List<Vector2> currentFaceUVCoords = TextureIDToUVCoords(currentFaceTextureID);
             
-            //ERROR - PRINTS ALL 0
-            foreach(Vector2 coord in currentFaceUVCoords)
-                print((coord.x, coord.y));
             uvs.Add(currentFaceUVCoords[0]);
             uvs.Add(currentFaceUVCoords[1]);
             uvs.Add(currentFaceUVCoords[2]);
             uvs.Add(currentFaceUVCoords[3]);
-
-            // uvs.Add(new Vector2(0f,0f));
-            // uvs.Add(new Vector2(0f,0f));
-            // uvs.Add(new Vector2(0f,0f));
-            // uvs.Add(new Vector2(0f,0f));
             }
         }
     }
@@ -284,7 +307,6 @@ public class ChunkGenerator : MonoBehaviour
                 int[] currentFace = {0,1,2,2,3,0};
                 voxelTriangles.AddRange(currentFace);
             }
-        
         }
 
         for (int i = 0; i < voxelTriangles.Count; i++)
@@ -297,6 +319,7 @@ public class ChunkGenerator : MonoBehaviour
 
     public void AddBlock(Vector3Int blockPos) {
         blockAtPos[blockPos.x, blockPos.y, blockPos.z] = true;
+        blockID[blockPos.x, blockPos.y, blockPos.z] = (byte)hotbar.currentBlock;
         ClearChunkData();
         CreateMeshData();
         UpdateMesh();
@@ -324,10 +347,8 @@ public class ChunkGenerator : MonoBehaviour
         mesh.vertices = vertices.ToArray();
         mesh.triangles = triangles.ToArray();
         mesh.uv = uvs.ToArray();
-        mesh.RecalculateNormals();
 
-        print(vertices.Count);
-        print(uvs.Count);
+        mesh.RecalculateNormals();
         GetComponent<MeshCollider>().sharedMesh = mesh;
     }
 }

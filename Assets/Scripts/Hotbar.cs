@@ -5,9 +5,8 @@ using UnityEngine.UI;
 
 public class Hotbar : MonoBehaviour
 {
-    public List<Material> blocks = new List<Material>();
     public List<GameObject> outlines = new List<GameObject>();
-    static public int currentBlock;
+    public int currentBlock;
     private bool blockChange = false; //Used to determine whether the highlighted hotbar slot needs to change
 
     void Start()
@@ -34,10 +33,35 @@ public class Hotbar : MonoBehaviour
             blockChange = true;
             currentBlock = 3;
         }
+        else if (Input.GetKeyDown(KeyCode.Alpha5)) {
+            blockChange = true;
+            currentBlock = 4;
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha6)) {
+            blockChange = true;
+            currentBlock = 5;
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha7)) {
+            blockChange = true;
+            currentBlock = 6;
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha8)) {
+            blockChange = true;
+            currentBlock = 7;
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha9)) {
+            blockChange = true;
+            currentBlock = 8;
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha0)) {
+            blockChange = true;
+            currentBlock = 9;
+        }
+        
 
         if (blockChange)
         {
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 10; i++)
             {
                 if (i == currentBlock)
                     outlines[i].SetActive(true);

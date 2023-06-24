@@ -39,36 +39,20 @@ public class RaycastInfo : MonoBehaviour
 
     Vector3Int CalculatePlacePosition(RaycastHit hitInfo)
     {
+        int x = (int)Mathf.Floor(hitInfo.point.x + hitInfo.normal.x * 0.5f);
+        int y = (int)Mathf.Floor(hitInfo.point.y + hitInfo.normal.y * 0.5f);
+        int z = (int)Mathf.Floor(hitInfo.point.z + hitInfo.normal.z * 0.5f);
 
-        int x = (int)Mathf.Floor(hitInfo.point.x);
-        int y = (int)Mathf.Floor(hitInfo.point.y);
-        int z = (int)Mathf.Floor(hitInfo.point.z);
-
-        int normalX = (int)hitInfo.normal.x;
-        int normalY = (int)hitInfo.normal.y;
-        int normalZ = (int)hitInfo.normal.z;
-
-        if (normalX < 0 || normalY < 0 || normalZ < 0)
-            return new Vector3Int(x,y,z) + new Vector3Int(normalX,normalY,normalZ);
-
-        else
-            return new Vector3Int(x,y,z);
+        return new Vector3Int(x, y, z);
     }
 
 
     Vector3Int CalculateDestroyPosition(RaycastHit hitInfo)
-    {
-        int x = (int)Mathf.Floor(hitInfo.point.x);
-        int y = (int)Mathf.Floor(hitInfo.point.y);
-        int z = (int)Mathf.Floor(hitInfo.point.z);
+    {    
+        int x = (int)Mathf.Floor(hitInfo.point.x - hitInfo.normal.x * 0.5f);
+        int y = (int)Mathf.Floor(hitInfo.point.y - hitInfo.normal.y * 0.5f);
+        int z = (int)Mathf.Floor(hitInfo.point.z - hitInfo.normal.z * 0.5f);
 
-        int normalX = (int)hitInfo.normal.x;
-        int normalY = (int)hitInfo.normal.y;
-        int normalZ = (int)hitInfo.normal.z;
-
-        if (normalX > 0 || normalY > 0 || normalZ > 0)
-            return new Vector3Int(x,y,z) - new Vector3Int(normalX,normalY,normalZ);
-        else
-            return new Vector3Int(x,y,z);
+        return new Vector3Int(x, y, z);
     }
 }
