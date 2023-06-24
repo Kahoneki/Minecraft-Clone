@@ -7,22 +7,36 @@ public class RaycastInfo : MonoBehaviour
     public Camera gameCamera;
     public float reachDistance;
 
+    public float breakPlaceDelay; //Delay between breaking and placing blocks
+    private float currentDelay;
+
     public Hotbar hotbarUI;
 
     public ChunkGenerator chunkGenerator;
 
-    void Update()
-    {
+    void Start() {
+        currentDelay = 0;
+    }
+
+    void Update() {
+
         Ray ray = gameCamera.ScreenPointToRay(Input.mousePosition);
         RaycastHit hitInfo;
-        if (Physics.Raycast(ray, out hitInfo, reachDistance))
-        {
-            Debug.DrawLine(gameCamera.transform.position, hitInfo.point,Color.green);
-            if (Input.GetMouseButtonDown(1))
+        if (Physics.Raycast(ray, out hitInfo, reachDistance)) {
+            if (Input.GetMouseButton(1) && currentDelay <= 0f) {
+                Vector3Int placePosition = CalculatePlacePosition(hitInfo);
+                int x = placePosition.x;
+                int y = placePosition.y;
+                int z = placePosition.z;
+                if (x >= 0 && x < chunkGenerator.maxChunkSize.x &&
+                    y >= 0 && y < chunkGenerator.maxChunkSize.y &&
+                    z >= 0 && z < chunkGenerator.maxChunkSize.z
+                    )
                 chunkGenerator.AddBlock(CalculatePlacePosition(hitInfo));
+                currentDelay = breakPlaceDelay;
+            }
 
-            else if (Input.GetMouseButtonDown(0))
-            {
+            else if (Input.GetMouseButton(0) && currentDelay <= 0f) {
                 Vector3Int destroyPosition = CalculateDestroyPosition(hitInfo);
                 int x = destroyPosition.x;
                 int y = destroyPosition.y;
@@ -32,7 +46,13 @@ public class RaycastInfo : MonoBehaviour
                     z >= 0 && z < chunkGenerator.maxChunkSize.z
                     )
                     chunkGenerator.RemoveBlock(destroyPosition);
+                currentDelay = breakPlaceDelay;
             }
+
+            else if (Input.GetMouseButtonUp(0) || Input.GetMouseButtonUp(1))
+                currentDelay = breakPlaceDelay;
+            
+            currentDelay -= Time.deltaTime;
         }
     }
 

@@ -966,6 +966,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameCamera: {fileID: 963194227}
   reachDistance: 5
+  breakPlaceDelay: 0.2
   hotbarUI: {fileID: 1594531625}
   chunkGenerator: {fileID: 1554583993}
 --- !u!4 &841500287
@@ -994,9 +995,9 @@ GameObject:
   - component: {fileID: 878419761}
   - component: {fileID: 878419760}
   - component: {fileID: 878419759}
-  - component: {fileID: 878419764}
   - component: {fileID: 878419765}
   - component: {fileID: 878419763}
+  - component: {fileID: 878419764}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -1450,7 +1451,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b84ae3e76d13e4a4b97add84d37bbdd6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mouseSensitivity: 2000
+  mouseSensitivity: 3
   playerBody: {fileID: 878419762}
 --- !u!1 &973318768
 GameObject:
@@ -2526,8 +2527,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   hotbar: {fileID: 1594531625}
-  maxChunkSize: {x: 40, y: 40, z: 40}
-  startingChunk: {x: 8, y: 20, z: 8}
+  maxChunkSize: {x: 40, y: 300, z: 40}
+  startingChunk: {x: 8, y: 16, z: 8}
   meshMaterial: {fileID: 2100000, guid: ae017fb85e7ad4e4da4f7ffd7ce22b1b, type: 2}
 --- !u!33 &1554583994
 MeshFilter:
