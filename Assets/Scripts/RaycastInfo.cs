@@ -50,7 +50,7 @@ public class RaycastInfo : MonoBehaviour
             }
 
             else if (Input.GetMouseButtonUp(0) || Input.GetMouseButtonUp(1))
-                currentDelay = breakPlaceDelay;
+                currentDelay = 0;
             
             currentDelay -= Time.deltaTime;
         }
