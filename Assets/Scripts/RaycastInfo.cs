@@ -12,7 +12,18 @@ public class RaycastInfo : MonoBehaviour
 
     public Hotbar hotbarUI;
 
-    public ChunkGenerator chunkGenerator;
+    public WorldGenerator worldGenerator;
+
+    public GameObject blockHighlight;
+
+    private readonly Dictionary<Vector3, Vector3> normalToHighlightRotation = new Dictionary<Vector3, Vector3>{
+        {Vector3.up, Vector3.forward},
+        {Vector3.down, Vector3.back},
+        {Vector3.left, Vector3.back},
+        {Vector3.right, Vector3.forward},
+        {Vector3.forward, Vector3.forward},
+        {Vector3.back, Vector3.back}
+    };
 
     void Start() {
         currentDelay = 0;
@@ -23,42 +34,69 @@ public class RaycastInfo : MonoBehaviour
         Ray ray = gameCamera.ScreenPointToRay(Input.mousePosition);
         RaycastHit hitInfo;
         if (Physics.Raycast(ray, out hitInfo, reachDistance)) {
-            if (Input.GetMouseButton(1) && currentDelay <= 0f) {
-                Vector3Int placePosition = CalculatePlacePosition(hitInfo);
-                int x = placePosition.x;
-                int y = placePosition.y;
-                int z = placePosition.z;
-                if (x >= 0 && x < chunkGenerator.maxChunkSize.x &&
-                    y >= 0 && y < chunkGenerator.maxChunkSize.y &&
-                    z >= 0 && z < chunkGenerator.maxChunkSize.z
-                    )
-                chunkGenerator.AddBlock(CalculatePlacePosition(hitInfo));
-                currentDelay = breakPlaceDelay;
-            }
+            //Sometimes normal will be a weird value, i.e. (0,0,0) or (1,0,1)
+            if (normalToHighlightRotation.ContainsKey(hitInfo.normal)) {
+                PlaceBlockHighlight(hitInfo);
 
-            else if (Input.GetMouseButton(0) && currentDelay <= 0f) {
-                Vector3Int destroyPosition = CalculateDestroyPosition(hitInfo);
-                int x = destroyPosition.x;
-                int y = destroyPosition.y;
-                int z = destroyPosition.z;
-                if (x >= 0 && x < chunkGenerator.maxChunkSize.x &&
-                    y >= 0 && y < chunkGenerator.maxChunkSize.y &&
-                    z >= 0 && z < chunkGenerator.maxChunkSize.z
-                    )
-                    chunkGenerator.RemoveBlock(destroyPosition);
-                currentDelay = breakPlaceDelay;
+                if (Input.GetMouseButton(0) && currentDelay <= 0f)
+                    LeftClick(hitInfo);
+                else if (Input.GetMouseButton(1) && currentDelay <= 0f)
+                    RightClick(hitInfo);
+                else if (Input.GetMouseButtonUp(0) || Input.GetMouseButtonUp(1))
+                    currentDelay = 0;
+                currentDelay -= Time.deltaTime;
             }
-
-            else if (Input.GetMouseButtonUp(0) || Input.GetMouseButtonUp(1))
-                currentDelay = 0;
-            
-            currentDelay -= Time.deltaTime;
+        }
+        else {
+            blockHighlight.SetActive(false);
         }
     }
 
 
-    Vector3Int CalculatePlacePosition(RaycastHit hitInfo)
-    {
+    void PlaceBlockHighlight(RaycastHit hitInfo) {
+        blockHighlight.SetActive(true);
+
+        hitInfo.normal = Vector3Int.FloorToInt(hitInfo.normal);
+
+        float x = Mathf.Floor(hitInfo.point.x) + (hitInfo.normal.x * 0.01f);
+        float y = Mathf.Floor(hitInfo.point.y) + (hitInfo.normal.y * 0.01f);
+        float z = Mathf.Floor(hitInfo.point.z) + (hitInfo.normal.z * 0.01f);
+        blockHighlight.transform.position = new Vector3(x,y,z);
+        blockHighlight.transform.rotation = Quaternion.FromToRotation(hitInfo.normal, normalToHighlightRotation[hitInfo.normal]);
+    }
+
+
+    void LeftClick(RaycastHit hitInfo) {
+        Vector3Int globalPos = CalculateDestroyPosition(hitInfo);
+        int chunkX = Mathf.FloorToInt(globalPos.x / worldGenerator.startingChunk.x);
+        int chunkZ = Mathf.FloorToInt(globalPos.z / worldGenerator.startingChunk.z);
+        Vector2Int chunkIndex = new Vector2Int(chunkX, chunkZ);
+
+        int localX = globalPos.x - (chunkX * worldGenerator.startingChunk.x);
+        int localZ = globalPos.z - (chunkZ * worldGenerator.startingChunk.z);
+        Vector3Int localPos = new Vector3Int(localX, globalPos.y, localZ);
+
+        worldGenerator.chunks[chunkIndex].GetComponent<ChunkGenerator>().RemoveBlock(localPos);
+        currentDelay = breakPlaceDelay;
+    }
+
+
+    void RightClick(RaycastHit hitInfo) {
+        Vector3Int globalPos = CalculatePlacePosition(hitInfo);
+        int chunkX = Mathf.FloorToInt(globalPos.x / worldGenerator.startingChunk.x);
+        int chunkZ = Mathf.FloorToInt(globalPos.z / worldGenerator.startingChunk.z);
+        Vector2Int chunkIndex = new Vector2Int(chunkX, chunkZ);
+
+        int localX = globalPos.x - (chunkX * worldGenerator.startingChunk.x);
+        int localZ = globalPos.z - (chunkZ * worldGenerator.startingChunk.z);
+        Vector3Int localPos = new Vector3Int(localX, globalPos.y, localZ);
+
+        worldGenerator.chunks[chunkIndex].GetComponent<ChunkGenerator>().AddBlock(localPos);
+        currentDelay = breakPlaceDelay;
+    }
+
+
+    Vector3Int CalculatePlacePosition(RaycastHit hitInfo) {
         int x = (int)Mathf.Floor(hitInfo.point.x + hitInfo.normal.x * 0.5f);
         int y = (int)Mathf.Floor(hitInfo.point.y + hitInfo.normal.y * 0.5f);
         int z = (int)Mathf.Floor(hitInfo.point.z + hitInfo.normal.z * 0.5f);
@@ -67,8 +105,7 @@ public class RaycastInfo : MonoBehaviour
     }
 
 
-    Vector3Int CalculateDestroyPosition(RaycastHit hitInfo)
-    {    
+    Vector3Int CalculateDestroyPosition(RaycastHit hitInfo) {    
         int x = (int)Mathf.Floor(hitInfo.point.x - hitInfo.normal.x * 0.5f);
         int y = (int)Mathf.Floor(hitInfo.point.y - hitInfo.normal.y * 0.5f);
         int z = (int)Mathf.Floor(hitInfo.point.z - hitInfo.normal.z * 0.5f);
