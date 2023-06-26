@@ -7,7 +7,7 @@ public class ChunkGenerator : MonoBehaviour
 {
     public Hotbar hotbar;
 
-    private int amplitude;
+
     private int minPerlinNoiseHeight;
     private bool[,,] blockAtPos;
     private byte[,,] blockID;
@@ -30,9 +30,8 @@ public class ChunkGenerator : MonoBehaviour
         firstGeneration = true;
 
         blockAtPos = new bool[wg.maxChunkSize.x, wg.maxChunkSize.y, wg.maxChunkSize.z];
-        blockID = new byte[wg.maxChunkSize.x, wg.maxChunkSize.y, wg.maxChunkSize.z];
+        blockID = new byte[wg.maxChunkSize.x, wg.maxChunkSize.y, wg.maxChunkSize.z];        
 
-        amplitude = 10;
         minPerlinNoiseHeight = wg.startingChunk.y-(int)(wg.startingChunk.y/4);
 
         mesh = new Mesh();
@@ -49,6 +48,9 @@ public class ChunkGenerator : MonoBehaviour
 
     void PopulateInitialChunk() {
 
+        int globalX = (int)transform.position.x;
+        int globalZ = (int)transform.position.z;
+
         //Initiating all blocks to air blocks
         for (int x = 0; x < wg.maxChunkSize.x; x++) {
             for (int y = 0; y < wg.maxChunkSize.y; y++) {
@@ -59,16 +61,12 @@ public class ChunkGenerator : MonoBehaviour
         }
 
         //Filling in starting blocks
-
-        float randomNoiseOffsetX = Random.Range(0f, 100f);
-        float randomNoiseOffsetZ = Random.Range(0f, 100f);
-
         for (int x = 0; x < wg.startingChunk.x; x++) {
             for (int y = 0; y < wg.startingChunk.y; y++) {
                 for (int z = 0; z < wg.startingChunk.z; z++) {
 
-                    if (y >= minPerlinNoiseHeight && firstGeneration) {
-                        int height = minPerlinNoiseHeight + GetHeightAtPos(x + randomNoiseOffsetX,z + randomNoiseOffsetZ);
+                    if (y >= minPerlinNoiseHeight) {
+                        int height = minPerlinNoiseHeight + GetHeightAtPos(globalX + x, globalZ + z);
                         for (int i=minPerlinNoiseHeight; i<=height; i++) {
                             blockAtPos[x, i, z] = true;
                             blockID[x,i,z] = StartingChunkBlockLookup(i);
@@ -85,13 +83,12 @@ public class ChunkGenerator : MonoBehaviour
 
 
     int GetHeightAtPos(float x, float z) {
-        float xScale = (float)wg.startingChunk.x;
-        float zScale = (float)wg.startingChunk.z;
 
-        float xOrg = ((x/xScale));
-        float zOrg = ((z/zScale));
 
-        return (int)((Mathf.PerlinNoise(xOrg, zOrg) * amplitude));
+        float xOrg = (x+wg.randomNoiseOffsetX) / wg.noiseScaleX;
+        float zOrg = (z+wg.randomNoiseOffsetZ) / wg.noiseScaleZ;
+
+        return (int)(Mathf.PerlinNoise(xOrg*wg.localHeightVariation, zOrg*wg.localHeightVariation) * wg.amplitude);
     }
 
 
@@ -130,13 +127,11 @@ public class ChunkGenerator : MonoBehaviour
                             int offsetY = y + (int)offset.y;
                             int offsetZ = z + (int)offset.z;
 
-                            //Checking if out of bounds of array (at edge of chunk)
-                            if (
-                                offsetX < 0 || offsetX >= wg.maxChunkSize.x ||
+                            // Checking if out of bounds of array (at edge of chunk)
+                            if (offsetX < 0 || offsetX >= wg.maxChunkSize.x ||
                                 offsetY < 0 || offsetY >= wg.maxChunkSize.y ||
-                                offsetZ < 0 || offsetZ >= wg.maxChunkSize.z
-                                )
-                                visibleFaces.Add(offset);
+                                offsetZ < 0 || offsetZ >= wg.maxChunkSize.z)
+                                    visibleFaces.Add(offset);
 
                             else if (!blockAtPos[offsetX,offsetY,offsetZ])
                                 visibleFaces.Add(offset);

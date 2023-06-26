@@ -12,7 +12,7 @@ public class RaycastInfo : MonoBehaviour
 
     public Hotbar hotbarUI;
 
-    public WorldGenerator worldGenerator;
+    public WorldGenerator wg;
 
     public GameObject blockHighlight;
 
@@ -68,30 +68,32 @@ public class RaycastInfo : MonoBehaviour
 
     void LeftClick(RaycastHit hitInfo) {
         Vector3Int globalPos = CalculateDestroyPosition(hitInfo);
-        int chunkX = Mathf.FloorToInt(globalPos.x / worldGenerator.startingChunk.x);
-        int chunkZ = Mathf.FloorToInt(globalPos.z / worldGenerator.startingChunk.z);
+
+        int chunkX = Mathf.FloorToInt((float)globalPos.x / (float)wg.startingChunk.x);
+        int chunkZ = Mathf.FloorToInt((float)globalPos.z / (float)wg.startingChunk.z);
         Vector2Int chunkIndex = new Vector2Int(chunkX, chunkZ);
 
-        int localX = globalPos.x - (chunkX * worldGenerator.startingChunk.x);
-        int localZ = globalPos.z - (chunkZ * worldGenerator.startingChunk.z);
+        int localX = globalPos.x - (chunkX * wg.startingChunk.x);
+        int localZ = globalPos.z - (chunkZ * wg.startingChunk.z);
         Vector3Int localPos = new Vector3Int(localX, globalPos.y, localZ);
 
-        worldGenerator.chunks[chunkIndex].GetComponent<ChunkGenerator>().RemoveBlock(localPos);
+        wg.allChunks[chunkIndex].GetComponent<ChunkGenerator>().RemoveBlock(localPos);
         currentDelay = breakPlaceDelay;
     }
 
 
     void RightClick(RaycastHit hitInfo) {
         Vector3Int globalPos = CalculatePlacePosition(hitInfo);
-        int chunkX = Mathf.FloorToInt(globalPos.x / worldGenerator.startingChunk.x);
-        int chunkZ = Mathf.FloorToInt(globalPos.z / worldGenerator.startingChunk.z);
+        
+        int chunkX = Mathf.FloorToInt((float)globalPos.x / (float)wg.startingChunk.x);
+        int chunkZ = Mathf.FloorToInt((float)globalPos.z / (float)wg.startingChunk.z);
         Vector2Int chunkIndex = new Vector2Int(chunkX, chunkZ);
 
-        int localX = globalPos.x - (chunkX * worldGenerator.startingChunk.x);
-        int localZ = globalPos.z - (chunkZ * worldGenerator.startingChunk.z);
+        int localX = globalPos.x - (chunkX*wg.startingChunk.x);
+        int localZ = globalPos.z - (chunkZ*wg.startingChunk.z);
         Vector3Int localPos = new Vector3Int(localX, globalPos.y, localZ);
 
-        worldGenerator.chunks[chunkIndex].GetComponent<ChunkGenerator>().AddBlock(localPos);
+        wg.allChunks[chunkIndex].GetComponent<ChunkGenerator>().AddBlock(localPos);
         currentDelay = breakPlaceDelay;
     }
 

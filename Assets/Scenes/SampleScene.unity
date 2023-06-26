@@ -999,7 +999,7 @@ MonoBehaviour:
   reachDistance: 5
   breakPlaceDelay: 0.2
   hotbarUI: {fileID: 1594531625}
-  worldGenerator: {fileID: 2072460795}
+  wg: {fileID: 2072460795}
   blockHighlight: {fileID: 523761280}
 --- !u!4 &841500287
 Transform:
@@ -1108,7 +1108,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 878419758}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 9.22, y: 1.5, z: -7.1}
+  m_LocalPosition: {x: 0, y: 20, z: 0}
   m_LocalScale: {x: 0.7, y: 0.8, z: 0.7}
   m_Children:
   - {fileID: 963194228}
@@ -3257,10 +3257,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 976c8f151d253c8409ff34493bf430e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxChunkSize: {x: 40, y: 40, z: 40}
-  startingChunk: {x: 16, y: 20, z: 16}
+  amplitude: 0
+  localHeightVariation: 0
+  noiseScaleX: 0
+  noiseScaleZ: 0
+  maxChunkSize: {x: 40, y: 300, z: 40}
+  startingChunk: {x: 16, y: 5, z: 16}
+  randomNoiseOffsetX: 0
+  randomNoiseOffsetZ: 0
   meshMaterial: {fileID: 2100000, guid: ae017fb85e7ad4e4da4f7ffd7ce22b1b, type: 2}
   chunkPrefab: {fileID: 480199388041397274, guid: d96175f8ebd94804987e6fd704c9a8cf, type: 3}
+  playerTransform: {fileID: 878419762}
 --- !u!4 &2072460796
 Transform:
   m_ObjectHideFlags: 0

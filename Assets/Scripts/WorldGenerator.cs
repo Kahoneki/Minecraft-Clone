@@ -5,9 +5,22 @@ using UnityEngine;
 public class WorldGenerator : MonoBehaviour
 {
 
+    private int renderDistance = 4;
+
     private int atlasSize = 4;
+
+    private int maxNumChunks;
+
+    public int amplitude;
+    public int localHeightVariation;
+    public float noiseScaleX;
+    public float noiseScaleZ;
+
     public Vector3Int maxChunkSize = new Vector3Int(40,40,40);
     public Vector3Int startingChunk = new Vector3Int(16,20,16);
+
+    public float randomNoiseOffsetX;
+    public float randomNoiseOffsetZ;
 
     public readonly Vector3[] localVertexPositions = 
     {
@@ -137,16 +150,64 @@ public class WorldGenerator : MonoBehaviour
         return uvCoords;
     }
 
-    public Dictionary<Vector2Int, GameObject> chunks = new Dictionary<Vector2Int, GameObject>();
+    public Dictionary<Vector2Int, GameObject> allChunks = new Dictionary<Vector2Int, GameObject>();
 
     public Material meshMaterial;
 
     public GameObject chunkPrefab;
 
-    void Start() {
-        GameObject chunk = GameObject.Instantiate(chunkPrefab);
-        chunk.transform.parent = transform;
+    public Transform playerTransform;
+    Vector2Int chunkLastPosition = new Vector2Int(0,0);
 
-        chunks.Add(new Vector2Int(0,0), chunk);
+    void Start() {
+        randomNoiseOffsetX = Random.Range(0f, 100f);
+        randomNoiseOffsetZ = Random.Range(0f, 100f);
+        amplitude = 5;
+        localHeightVariation = 5 * ((startingChunk.x+startingChunk.z)/2);
+        noiseScaleX = (float)(startingChunk.x * 100);
+        noiseScaleZ = (float)(startingChunk.z * 100);
+
+        for (int x=-renderDistance; x<=renderDistance; x++) {
+            for (int z=-renderDistance; z<=renderDistance; z++) {
+            GameObject chunk = GameObject.Instantiate(chunkPrefab, new Vector3(x*startingChunk.x, 0, z*startingChunk.z), transform.rotation);
+            chunk.transform.parent = transform;
+
+            allChunks.Add(new Vector2Int(x,z), chunk);
+            }
+        }
+    }
+
+
+    void Update() {
+        LoadChunks();
+        
+    }
+
+
+    void LoadChunks() {
+        Vector2Int currentChunk = new Vector2Int(Mathf.FloorToInt(playerTransform.position.x / startingChunk.x), Mathf.FloorToInt(playerTransform.position.z / startingChunk.z));
+
+        //Don't run unless player has changed chunk since last frame.
+        if (chunkLastPosition != currentChunk) {
+            List<Vector2Int> ChunksVisibleToPlayer = new List<Vector2Int>();
+            for (int x=currentChunk.x-renderDistance; x<=currentChunk.x+renderDistance; x++)
+                for (int z=currentChunk.y-renderDistance; z<=currentChunk.y+renderDistance; z++)
+                    ChunksVisibleToPlayer.Add(new Vector2Int(x,z));
+            
+            foreach (KeyValuePair<Vector2Int, GameObject> chunk in allChunks) {
+                if (ChunksVisibleToPlayer.Contains(chunk.Key))
+                    chunk.Value.SetActive(true);
+                else
+                    chunk.Value.SetActive(false);
+            }
+            foreach (Vector2Int visibleChunk in ChunksVisibleToPlayer) {
+                if (!allChunks.ContainsKey(visibleChunk)) {
+                    GameObject chunk = GameObject.Instantiate(chunkPrefab, new Vector3(visibleChunk.x*startingChunk.x, 0, visibleChunk.y*startingChunk.z), transform.rotation);
+                    chunk.transform.parent = transform;
+                    allChunks.Add(visibleChunk, chunk);
+                }
+            }
+        chunkLastPosition = currentChunk;
+        }
     }
 }
