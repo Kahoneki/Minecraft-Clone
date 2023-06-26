@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using System;
 using UnityEngine;
+
 
 [RequireComponent(typeof(MeshFilter))]
 public class ChunkGenerator : MonoBehaviour
@@ -9,81 +11,63 @@ public class ChunkGenerator : MonoBehaviour
 
 
     private int minPerlinNoiseHeight;
-    private bool[,,] blockAtPos;
-    private byte[,,] blockID;
 
     private bool firstGeneration;
 
-    private WorldGenerator wg;
+    public WorldGenerator wg;
 
-    Mesh mesh;
+    
+
     List<Vector3> vertices = new List<Vector3>();
-    List<int> triangles = new List<int>();
     List<Vector2> uvs = new List<Vector2>();
+    List<int> triangles = new List<int>();
 
-    void Start() {
+    public bool[,,] blockAtPos;
+    public byte[,,] blockID;
 
-        hotbar = GameObject.FindGameObjectWithTag("Hotbar").GetComponent<Hotbar>();
+    //Ran on thread
+    public (Vector3[], Vector2[], int[]) PopulateInitialChunkData(int globalX, int globalZ, Hotbar hotbarIn) {
 
-        wg = GetComponentInParent<WorldGenerator>();
-
+        
         firstGeneration = true;
+        minPerlinNoiseHeight = wg.startingChunk.y-(int)(wg.startingChunk.y/4);
+        hotbar = hotbarIn;
 
         blockAtPos = new bool[wg.maxChunkSize.x, wg.maxChunkSize.y, wg.maxChunkSize.z];
-        blockID = new byte[wg.maxChunkSize.x, wg.maxChunkSize.y, wg.maxChunkSize.z];        
-
-        minPerlinNoiseHeight = wg.startingChunk.y-(int)(wg.startingChunk.y/4);
-
-        mesh = new Mesh();
-        mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-        GetComponent<MeshFilter>().mesh = mesh;
-        Renderer meshRenderer = GetComponent<MeshRenderer>();
-        meshRenderer.material = wg.meshMaterial;
-
-        PopulateInitialChunk();
-        CreateMeshData();
-        UpdateMesh();
-        firstGeneration = false;
-    }
-
-    void PopulateInitialChunk() {
-
-        int globalX = (int)transform.position.x;
-        int globalZ = (int)transform.position.z;
+        blockID = new byte[wg.maxChunkSize.x, wg.maxChunkSize.y, wg.maxChunkSize.z];
 
         //Initiating all blocks to air blocks
-        for (int x = 0; x < wg.maxChunkSize.x; x++) {
-            for (int y = 0; y < wg.maxChunkSize.y; y++) {
-                for (int z = 0; z < wg.maxChunkSize.z; z++) {
-                    blockID[x,y,z] = 255;
-                }
-            }
-        }
+        for (int x = 0; x < wg.maxChunkSize.x; x++)
+        for (int y = 0; y < wg.maxChunkSize.y; y++)
+        for (int z = 0; z < wg.maxChunkSize.z; z++)
+            blockID[x,y,z] = 255;
 
         //Filling in starting blocks
-        for (int x = 0; x < wg.startingChunk.x; x++) {
-            for (int y = 0; y < wg.startingChunk.y; y++) {
-                for (int z = 0; z < wg.startingChunk.z; z++) {
+        for (int x = 0; x < wg.startingChunk.x; x++)
+        for (int y = 0; y < wg.startingChunk.y; y++)
+        for (int z = 0; z < wg.startingChunk.z; z++)
 
-                    if (y >= minPerlinNoiseHeight) {
-                        int height = minPerlinNoiseHeight + GetHeightAtPos(globalX + x, globalZ + z);
-                        for (int i=minPerlinNoiseHeight; i<=height; i++) {
-                            blockAtPos[x, i, z] = true;
-                            blockID[x,i,z] = StartingChunkBlockLookup(i);
-                        }
-                    }
-                    else {
-                        blockAtPos[x, y, z] = true;
-                        blockID[x,y,z] = StartingChunkBlockLookup(y);
-                    }
+            if (y >= minPerlinNoiseHeight) {
+                int height = minPerlinNoiseHeight + GetHeightAtPos(globalX + x, globalZ + z);
+                for (int i=minPerlinNoiseHeight; i<=height; i++) {
+                    blockAtPos[x, i, z] = true;
+                    blockID[x,i,z] = StartingChunkBlockLookup(i);
                 }
             }
-        }
+            else {
+                blockAtPos[x, y, z] = true;
+                blockID[x,y,z] = StartingChunkBlockLookup(y);
+            }
+
+        CreateMeshData(blockAtPos, blockID);
+
+        firstGeneration = false;
+
+        return (vertices.ToArray(), uvs.ToArray(), triangles.ToArray());
     }
 
 
     int GetHeightAtPos(float x, float z) {
-
 
         float xOrg = (x+wg.randomNoiseOffsetX) / wg.noiseScaleX;
         float zOrg = (z+wg.randomNoiseOffsetZ) / wg.noiseScaleZ;
@@ -95,8 +79,9 @@ public class ChunkGenerator : MonoBehaviour
     byte StartingChunkBlockLookup(int y) {
         int max = wg.startingChunk.y;
 
-        //Coal Generation
-        if (y != 0 && y == Random.Range(0,max/2))
+        //Coal Generation - has to use System.Random as unity's random class is locked to the main thread.
+        System.Random random = new System.Random();
+        if (y != 0 && y == random.Next(0,max/2))
             return 3;
 
         if (y > max-(max/3))
@@ -111,7 +96,7 @@ public class ChunkGenerator : MonoBehaviour
     }
 
 
-    void CreateMeshData() {
+    void CreateMeshData(bool[,,] blockAtPos, byte[,,] blockID) {
 
         //Used for offsetting vertex indices
         int indexOffset = 0;
@@ -141,7 +126,7 @@ public class ChunkGenerator : MonoBehaviour
                             blockID[x,y,z] = 2;
 
                         AddVertices(new Vector3Int(x,y,z));
-                        AddUVs(new Vector3Int(x,y,z));
+                        AddUVs(new Vector3Int(x,y,z), blockAtPos, blockID);
                         AddTriangles(visibleFaces, indexOffset);
 
                         indexOffset+=24;
@@ -159,7 +144,7 @@ public class ChunkGenerator : MonoBehaviour
     }
 
 
-    void AddUVs(Vector3Int localChunkPos) {
+    void AddUVs(Vector3Int localChunkPos, bool[,,] blockAtPos, byte[,,] blockID) {
     byte currentBlock = blockID[localChunkPos.x, localChunkPos.y, localChunkPos.z];
 
     if (currentBlock == 255) return;
@@ -219,8 +204,8 @@ public class ChunkGenerator : MonoBehaviour
         blockAtPos[blockPos.x, blockPos.y, blockPos.z] = true;
         blockID[blockPos.x, blockPos.y, blockPos.z] = (byte)hotbar.currentBlock;
         ClearChunkData();
-        CreateMeshData();
-        UpdateMesh();
+        CreateMeshData(blockAtPos, blockID);
+        UpdateMesh(GetComponent<MeshFilter>().mesh);
     }
 
 
@@ -228,8 +213,8 @@ public class ChunkGenerator : MonoBehaviour
         blockAtPos[blockPos.x, blockPos.y, blockPos.z] = false;
 
         ClearChunkData();
-        CreateMeshData();
-        UpdateMesh();
+        CreateMeshData(blockAtPos, blockID);
+        UpdateMesh(GetComponent<MeshFilter>().mesh);
     }
 
 
@@ -240,7 +225,7 @@ public class ChunkGenerator : MonoBehaviour
     }
 
 
-    void UpdateMesh() {
+    void UpdateMesh(Mesh mesh) {
         mesh.Clear();
 
         mesh.vertices = vertices.ToArray();

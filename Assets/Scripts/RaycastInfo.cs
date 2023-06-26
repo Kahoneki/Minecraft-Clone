@@ -33,7 +33,7 @@ public class RaycastInfo : MonoBehaviour
 
         Ray ray = gameCamera.ScreenPointToRay(Input.mousePosition);
         RaycastHit hitInfo;
-        if (Physics.Raycast(ray, out hitInfo, reachDistance)) {
+        if (Physics.Raycast(ray, out hitInfo, reachDistance, (1 << LayerMask.NameToLayer("Ground")))) {
             //Sometimes normal will be a weird value, i.e. (0,0,0) or (1,0,1)
             if (normalToHighlightRotation.ContainsKey(hitInfo.normal)) {
                 PlaceBlockHighlight(hitInfo);
@@ -61,6 +61,8 @@ public class RaycastInfo : MonoBehaviour
         float x = Mathf.Floor(hitInfo.point.x) + (hitInfo.normal.x * 0.01f);
         float y = Mathf.Floor(hitInfo.point.y) + (hitInfo.normal.y * 0.01f);
         float z = Mathf.Floor(hitInfo.point.z) + (hitInfo.normal.z * 0.01f);
+
+
         blockHighlight.transform.position = new Vector3(x,y,z);
         blockHighlight.transform.rotation = Quaternion.FromToRotation(hitInfo.normal, normalToHighlightRotation[hitInfo.normal]);
     }
