@@ -7,9 +7,9 @@ public class WorldGenerator : MonoBehaviour
 {
     Hotbar hotbar;
 
-    private int renderDistance = 4;
-
     private int atlasSize = 4;
+
+    public int renderDistance;
 
     public int amplitude;
     public int localHeightVariation;
@@ -18,11 +18,16 @@ public class WorldGenerator : MonoBehaviour
     public float randomNoiseOffsetX;
     public float randomNoiseOffsetZ;
 
-    public int treeDensity = 16;
+    public int treeDensity;
+    public int minTreeHeight;
+    public int maxTreeHeight;
 
     public Vector3Int maxChunkSize = new Vector3Int(40,40,40);
     public Vector3Int startingChunk = new Vector3Int(16,20,16);
 
+
+    //Used for storing blocks to be passed on to other chunks - i.e. tree's whose leaves pass into different chunks - x,y,z,id
+    public List<Vector4> blockBuffer = new List<Vector4>();
 
 
     public readonly Vector3[] localVertexPositions = 
@@ -123,8 +128,9 @@ public class WorldGenerator : MonoBehaviour
         {9,9,9,9,9,9},          //Bedrock: 7
         {10,10,10,10,10,10},    //Sand: 8
         {11,11,11,11,11,11},    //Bricks: 9
-        {15,15,12,13,13,13},    //Unlit furnace: 10
-        {15,15,14,13,13,13}     //Lit furnace: 11
+        {12,12,12,12,12,12}     //Leaves: 10
+        // {15,15,12,13,13,13},    //Unlit furnace: 10
+        // {15,15,14,13,13,13}     //Lit furnace: 11
     };
     public List<Vector2> TextureIDToUVCoords(byte textureID) {
 
@@ -153,6 +159,9 @@ public class WorldGenerator : MonoBehaviour
         return uvCoords;
     }
     public Dictionary<Vector2Int, GameObject> allChunks = new Dictionary<Vector2Int, GameObject>();
+
+    public Dictionary<int, Vector3Int[]> leafPosLookupTable = new Dictionary<int, Vector3Int[]>();
+
     public Material meshMaterial;
     public GameObject chunkPrefab;
 
@@ -161,14 +170,47 @@ public class WorldGenerator : MonoBehaviour
     Vector2Int chunkLastPosition = new Vector2Int(1,0); //Chunk that the player was in on the previous frame - Initialised to 1,0 so that LoadChunks() runs on startup.
 
     void Start() {
+
+        PopulateLeafLookupTable();
+
         hotbar = GameObject.FindGameObjectWithTag("Hotbar").GetComponent<Hotbar>();
 
         randomNoiseOffsetX = Random.Range(0f, 100f);
         randomNoiseOffsetZ = Random.Range(0f, 100f);
-        amplitude = 6;
-        localHeightVariation = 8 * ((startingChunk.x+startingChunk.z)/2);
+        amplitude = 8;
+        localHeightVariation = 6 * ((startingChunk.x+startingChunk.z)/2);
         noiseScaleX = (float)(startingChunk.x * 100);
         noiseScaleZ = (float)(startingChunk.z * 100);
+    }
+
+
+    void PopulateLeafLookupTable() {
+        for (int i = minTreeHeight; i < maxTreeHeight; i++) {
+            List<Vector3Int> currentTree = new List<Vector3Int>();
+            for (int x=-2; x<=2; x++)
+            for (int y=i-1; y<=i; y++)
+            for (int z=-2; z<=2; z++)
+                if (x != 0 || z!= 0) {
+                    if (new Vector2Int(x,z) != new Vector2Int(-2,-2) &&
+                        new Vector2Int(x,z) != new Vector2Int(2,-2) &&
+                        new Vector2Int(x,z) != new Vector2Int(-2,2) &&
+                        new Vector2Int(x,z) != new Vector2Int(2,2))
+                        currentTree.Add(new Vector3Int(x,y,z));
+                    if (y == i-1)
+                        currentTree.Add(new Vector3Int(x,y,z));
+                }
+            
+            //Adding tree top
+            for (int y=i; y<i+2; y++) {
+                currentTree.Add(new Vector3Int(-1,y,0));
+                currentTree.Add(new Vector3Int(1,y,0));
+                currentTree.Add(new Vector3Int(0,y,-1));
+                currentTree.Add(new Vector3Int(0,y,1));
+                currentTree.Add(new Vector3Int(0,y,0));
+            }
+
+            leafPosLookupTable.Add(i, currentTree.ToArray());
+        }
     }
 
 
@@ -207,7 +249,7 @@ public class WorldGenerator : MonoBehaviour
 
                     Thread thread = new Thread(() =>
                     {
-                        (Vector3[], Vector2[], int[]) result = GenerateChunkData(cg, xPos, zPos);
+                        (Vector3[], Vector2[], int[]) result = GenerateChunkData(cg, xPos, zPos, currentChunk);
 
                         MainThreadDispatcher.RunOnMainThread(() =>
                         {
@@ -229,7 +271,7 @@ public class WorldGenerator : MonoBehaviour
     }
 
 
-    (Vector3[], Vector2[], int[]) GenerateChunkData(ChunkGenerator cg, int xPos, int zPos) {
-        return cg.PopulateInitialChunkData(xPos, zPos, hotbar);
+    (Vector3[], Vector2[], int[]) GenerateChunkData(ChunkGenerator cg, int xPos, int zPos, Vector2Int currentChunk) {
+        return cg.PopulateInitialChunkData(xPos, zPos, hotbar, currentChunk);
     }
 }

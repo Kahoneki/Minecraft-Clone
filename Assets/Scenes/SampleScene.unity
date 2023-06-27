@@ -182,7 +182,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3fd2f6d77c6d2d5459a33b5ab132693a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  capFPS: 1
+  capFPS: 0
   fpsCap: 60
   fpsCount: {fileID: 1331238456}
   position: {fileID: 952789589}
@@ -617,13 +617,13 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 476967670}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0.38268343, w: 0.92387956}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0.5, y: 0.5, z: 1}
   m_Children: []
   m_Father: {fileID: 1391465482}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 45}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
@@ -1158,7 +1158,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 878419758}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 20, z: 0}
+  m_LocalPosition: {x: 0, y: 30, z: 0}
   m_LocalScale: {x: 0.7, y: 0.8, z: 0.7}
   m_Children:
   - {fileID: 963194228}
@@ -1191,7 +1191,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 878419758}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0432317e6c694284a8642da88094d9f1, type: 3}
   m_Name: 
@@ -1210,12 +1210,12 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 878419758}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 76901c5516778c448b5dbdfe78ef54f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 16
+  speed: 32
   flightPower: 10
   controller: {fileID: 878419763}
 --- !u!1 &914725114
@@ -1600,7 +1600,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.71, z: 0}
+  m_LocalPosition: {x: 0, y: 0.9, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 878419762}
@@ -3331,7 +3331,7 @@ Transform:
   m_GameObject: {fileID: 1855429273}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0.5, y: 0.5, z: 0}
-  m_LocalScale: {x: 1.1, y: 1.1, z: 1}
+  m_LocalScale: {x: 1.2, y: 1.2, z: 1}
   m_Children: []
   m_Father: {fileID: 523761281}
   m_RootOrder: 0
@@ -3515,16 +3515,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 976c8f151d253c8409ff34493bf430e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  renderDistance: 4
   amplitude: 0
   localHeightVariation: 0
   noiseScaleX: 0
   noiseScaleZ: 0
-  maxChunkSize: {x: 40, y: 300, z: 40}
-  startingChunk: {x: 16, y: 5, z: 16}
   randomNoiseOffsetX: 0
   randomNoiseOffsetZ: 0
+  treeDensity: 5
+  minTreeHeight: 4
+  maxTreeHeight: 8
+  maxChunkSize: {x: 40, y: 300, z: 40}
+  startingChunk: {x: 16, y: 10, z: 16}
+  blockBuffer: []
   meshMaterial: {fileID: 2100000, guid: ae017fb85e7ad4e4da4f7ffd7ce22b1b, type: 2}
-  frictionless: {fileID: 13400000, guid: c7d5937b5c7d66a47be6e52882dad7c5, type: 2}
   chunkPrefab: {fileID: 480199388041397274, guid: d96175f8ebd94804987e6fd704c9a8cf, type: 3}
   playerTransform: {fileID: 878419762}
 --- !u!4 &2072460796

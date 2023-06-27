@@ -16,6 +16,8 @@ public class ChunkGenerator : MonoBehaviour
 
     public WorldGenerator wg;
 
+    System.Random random = new System.Random();
+
     
 
     List<Vector3> vertices = new List<Vector3>();
@@ -25,10 +27,11 @@ public class ChunkGenerator : MonoBehaviour
     public bool[,,] blockAtPos;
     public byte[,,] blockID;
 
-    //Ran on thread
-    public (Vector3[], Vector2[], int[]) PopulateInitialChunkData(int globalX, int globalZ, Hotbar hotbarIn) {
+    private System.Object thisLock = new System.Object();
 
-        
+    //Ran on thread
+    public (Vector3[], Vector2[], int[]) PopulateInitialChunkData(int globalX, int globalZ, Hotbar hotbarIn, Vector2Int currentChunk) {
+
         firstGeneration = true;
         minPerlinNoiseHeight = wg.startingChunk.y-(int)(wg.startingChunk.y/4);
         hotbar = hotbarIn;
@@ -58,6 +61,10 @@ public class ChunkGenerator : MonoBehaviour
                 blockAtPos[x, y, z] = true;
                 blockID[x,y,z] = StartingChunkBlockLookup(y);
             }
+
+        Vector3Int[] treePositions = GenerateTreePositions(globalX, globalZ);
+
+        AddTrees(treePositions, globalX, globalZ);
 
         CreateMeshData(blockAtPos, blockID);
 
@@ -96,6 +103,44 @@ public class ChunkGenerator : MonoBehaviour
     }
 
 
+    Vector3Int[] GenerateTreePositions(int globalX, int globalZ) {
+
+        List<Vector3Int> TreePositions = new List<Vector3Int>();
+
+        for (int i = 0; i < wg.treeDensity; i++) {
+            int randX = random.Next(0, wg.startingChunk.x-1);
+            int randZ = random.Next(0, wg.startingChunk.z-1);
+            while (TreePositions.Contains(new Vector3Int(globalX + randX, minPerlinNoiseHeight+GetHeightAtPos(globalX+randX, globalZ+randZ)+1, globalZ+randZ)) ||
+                    randX-2 < 0 || randX+2 > wg.startingChunk.x ||
+                    randZ-2 < 0 || randZ+2 > wg.startingChunk.z)
+                {
+                randX = random.Next(0, wg.startingChunk.x-1);
+                randZ = random.Next(0, wg.startingChunk.z-1);
+            }
+            TreePositions.Add(new Vector3Int(randX, minPerlinNoiseHeight+GetHeightAtPos(globalX+randX, globalZ+randZ)+1, randZ));
+        }
+        return TreePositions.ToArray();
+    }
+
+
+    void AddTrees(Vector3Int[] treePositions, int globalX, int globalZ) {
+        foreach (Vector3Int tree in treePositions) {
+
+            int height = random.Next(wg.minTreeHeight, wg.maxTreeHeight);
+    
+            for (int i=0; i<height; i++) {
+                blockAtPos[tree.x, tree.y+i, tree.z] = true;
+                blockID[tree.x, tree.y+i, tree.z] = 5;
+            }
+
+            foreach (Vector3Int leafPos in wg.leafPosLookupTable[height]) {
+                blockAtPos[tree.x+leafPos.x, tree.y+leafPos.y, tree.z+leafPos.z] = true;
+                blockID[tree.x+leafPos.x, tree.y+leafPos.y, tree.z+leafPos.z] = 10;
+            }
+        }
+    }
+
+
     void CreateMeshData(bool[,,] blockAtPos, byte[,,] blockID) {
 
         //Used for offsetting vertex indices
@@ -118,11 +163,11 @@ public class ChunkGenerator : MonoBehaviour
                                 offsetZ < 0 || offsetZ >= wg.maxChunkSize.z)
                                     visibleFaces.Add(offset);
 
-                            else if (!blockAtPos[offsetX,offsetY,offsetZ])
+                            else if (!blockAtPos[offsetX,offsetY,offsetZ] || blockID[offsetX,offsetY,offsetZ] == 10)
                                 visibleFaces.Add(offset);
                         }
 
-                        if (visibleFaces.Contains(wg.offsets[4]) && firstGeneration) //Top layer
+                        if (visibleFaces.Contains(wg.offsets[4]) && firstGeneration && blockID[x,y,z] != 5 && blockID[x,y,z] != 10) //Top layer
                             blockID[x,y,z] = 2;
 
                         AddVertices(new Vector3Int(x,y,z));

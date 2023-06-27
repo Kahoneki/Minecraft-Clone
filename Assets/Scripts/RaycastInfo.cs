@@ -86,6 +86,10 @@ public class RaycastInfo : MonoBehaviour
 
     void RightClick(RaycastHit hitInfo) {
         Vector3Int globalPos = CalculatePlacePosition(hitInfo);
+        Vector3Int cameraGlobalPos = new Vector3Int(Mathf.FloorToInt(gameCamera.transform.position.x),
+                                                    Mathf.FloorToInt(gameCamera.transform.position.y),
+                                                    Mathf.FloorToInt(gameCamera.transform.position.z));
+        
         
         int chunkX = Mathf.FloorToInt((float)globalPos.x / (float)wg.startingChunk.x);
         int chunkZ = Mathf.FloorToInt((float)globalPos.z / (float)wg.startingChunk.z);
@@ -95,8 +99,14 @@ public class RaycastInfo : MonoBehaviour
         int localZ = globalPos.z - (chunkZ*wg.startingChunk.z);
         Vector3Int localPos = new Vector3Int(localX, globalPos.y, localZ);
 
-        wg.allChunks[chunkIndex].GetComponent<ChunkGenerator>().AddBlock(localPos);
-        currentDelay = breakPlaceDelay;
+        int cameraLocalX = cameraGlobalPos.x - (chunkX*wg.startingChunk.x);
+        int cameraLocalZ = cameraGlobalPos.z - (chunkX*wg.startingChunk.x);
+        Vector3Int cameraLocalPos = new Vector3Int(cameraLocalX, cameraGlobalPos.y, cameraLocalZ);
+        
+        if (localPos != cameraLocalPos && localPos != cameraLocalPos+Vector3Int.down) {
+            wg.allChunks[chunkIndex].GetComponent<ChunkGenerator>().AddBlock(localPos);
+            currentDelay = breakPlaceDelay;
+        }
     }
 
 
